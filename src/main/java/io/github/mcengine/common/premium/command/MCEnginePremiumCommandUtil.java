@@ -15,14 +15,14 @@ import java.util.UUID;
  */
 public final class MCEnginePremiumCommandUtil {
 
-    /** Permission to create a rank table. */
-    public static final String PERM_CREATE = "mcengine.premium.rank.create";
-    /** Permission to upgrade own rank. */
-    public static final String PERM_UPGRADE = "mcengine.premium.rank.upgrade";
-    /** Permission to get own rank. */
-    public static final String PERM_GET_SELF = "mcengine.premium.rank.get";
-    /** Permission to get other players' ranks. */
-    public static final String PERM_GET_OTHERS = "mcengine.premium.rank.get.players";
+    /** Permission node: allows creating premium rank tables. */
+    private static final String PERM_CREATE = "mcengine.premium.rank.create";
+    /** Permission node: allows upgrading the sender's premium rank. */
+    private static final String PERM_UPGRADE = "mcengine.premium.rank.upgrade";
+    /** Permission node: allows checking the sender's premium rank. */
+    private static final String PERM_GET_SELF = "mcengine.premium.rank.get";
+    /** Permission node: allows checking other players' premium ranks. */
+    private static final String PERM_GET_OTHERS = "mcengine.premium.rank.get.players";
 
     private MCEnginePremiumCommandUtil() {}
 
@@ -81,6 +81,7 @@ public final class MCEnginePremiumCommandUtil {
 
     /**
      * Handles {@code /premium upgrade <rankType>}.
+     * <p>If the rank table does not exist, replies with: <em>"This rank type doesn't exist."</em></p>
      *
      * @param sender command sender
      * @param args   arguments
@@ -99,7 +100,15 @@ public final class MCEnginePremiumCommandUtil {
             usage(sender, "/" + label + " upgrade <rankType>");
             return;
         }
+
         String rankType = args[1];
+
+        // Call through the Premium common API to check existence.
+        if (!MCEnginePremiumCommon.getApi().rankTableExists(rankType)) {
+            sender.sendMessage(ChatColor.RED + "This rank type doesn't exist.");
+            return;
+        }
+
         UUID uuid = player.getUniqueId();
         MCEnginePremiumCommon.getApi().upgradePremiumRank(uuid.toString(), rankType);
         int newRank = MCEnginePremiumCommon.getApi().getPremiumRank(uuid.toString(), rankType);
@@ -113,6 +122,9 @@ public final class MCEnginePremiumCommandUtil {
      *   <li>{@code /premium get <rankType>} (self)</li>
      *   <li>{@code /premium get <playerOnline> <rankType>} (others)</li>
      * </ul>
+     *
+     * <p>If the rank table does not exist <strong>or</strong> the player has no entry,
+     * replies with: <em>"You don't have this rank."</em></p>
      *
      * @param sender command sender
      * @param args   arguments
@@ -130,7 +142,17 @@ public final class MCEnginePremiumCommandUtil {
                 return;
             }
             String rankType = args[1];
+
+            if (!MCEnginePremiumCommon.getApi().rankTableExists(rankType)) {
+                sender.sendMessage(ChatColor.RED + "You don't have this rank.");
+                return;
+            }
+
             int rank = MCEnginePremiumCommon.getApi().getPremiumRank(player.getUniqueId().toString(), rankType);
+            if (rank < 0) {
+                sender.sendMessage(ChatColor.RED + "You don't have this rank.");
+                return;
+            }
             sender.sendMessage(ChatColor.GREEN + "Your " + ChatColor.AQUA + rankType + ChatColor.GREEN
                     + " rank: " + ChatColor.GOLD + rank);
             return;
@@ -150,7 +172,17 @@ public final class MCEnginePremiumCommandUtil {
                 sender.sendMessage(ChatColor.RED + "Player not found or not online: " + playerName);
                 return;
             }
+
+            if (!MCEnginePremiumCommon.getApi().rankTableExists(rankType)) {
+                sender.sendMessage(ChatColor.RED + "You don't have this rank.");
+                return;
+            }
+
             int rank = MCEnginePremiumCommon.getApi().getPremiumRank(target.getUniqueId().toString(), rankType);
+            if (rank < 0) {
+                sender.sendMessage(ChatColor.RED + "You don't have this rank.");
+                return;
+            }
             sender.sendMessage(ChatColor.GREEN + target.getName() + "'s " + ChatColor.AQUA + rankType + ChatColor.GREEN
                     + " rank: " + ChatColor.GOLD + rank);
             return;
@@ -164,10 +196,22 @@ public final class MCEnginePremiumCommandUtil {
 
     /* ----------------------------- helpers ----------------------------- */
 
+    /**
+     * Sends a single usage line.
+     *
+     * @param sender recipient
+     * @param usage  usage text to display
+     */
     private static void usage(CommandSender sender, String usage) {
         sender.sendMessage(ChatColor.YELLOW + "Usage: " + usage);
     }
 
+    /**
+     * Sends a no-permission message including the missing node.
+    *
+     * @param sender recipient
+     * @param perm   permission node
+     */
     private static void noPerm(CommandSender sender, String perm) {
         sender.sendMessage(ChatColor.RED + "You don't have permission: " + perm);
     }

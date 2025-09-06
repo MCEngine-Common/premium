@@ -33,6 +33,14 @@ public interface IMCEnginePremiumDB {
     void upgradePremiumRank(String uuid, String rankType);
 
     /**
+     * Checks whether a rank table exists for the provided {@code rankType}.
+     *
+     * @param rankType the rank type (e.g., "vip")
+     * @return {@code true} if table exists; {@code false} otherwise
+     */
+    boolean rankTableExists(String rankType);
+
+    /**
      * Closes the current database connection.
      */
     void disConnection();

@@ -55,6 +55,16 @@ public class MCEnginePremiumCommon {
     public IMCEnginePremiumDB getDB() { return db; }
 
     /**
+     * Checks whether a premium rank table exists for the given rank type.
+     *
+     * @param rankType the rank type (e.g., "vip", "vvip")
+     * @return {@code true} if the table exists, {@code false} otherwise
+     */
+    public boolean rankTableExists(String rankType) {
+        return db.rankTableExists(rankType);
+    }
+
+    /**
      * Creates the necessary tables or schema for storing premium rank data.
      *
      * @param rankType type of rank (e.g., vip, vvip)
