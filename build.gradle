@@ -1,0 +1,134 @@
+// build.gradle
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.1.0'
+    id 'maven-publish'
+}
+
+// Set project version using a property (expects key: "<project.name>.version")
+version = project.properties[project.name + '.version']
+group = 'io.github.mcengine'
+
+ext {
+    // === User credentials (read from environment) ===
+    // Git username used for GitHub Packages auth.
+    user_git_name = System.getenv('USER_GIT_NAME')
+    // GitHub token used for publishing/reading packages; falls back to repository/org tokens where used.
+    user_github_token = System.getenv('USER_GITHUB_TOKEN')
+
+    // === Organization metadata ===
+    // Optional organization id (not required by build logic but kept for parity with other modules).
+    organization_id = System.getenv('ORGANIZATION_ID')
+    // Default org name for this module.
+    organization_name = System.getenv('ORGANIZATION_NAME') ?: 'MCEngine-Common'
+    // Optional org-scoped token for GitHub Packages.
+    organization_token = System.getenv('ORGANIZATION_TOKEN')
+
+    // === Repository metadata ===
+    // Optional repository id.
+    repository_id = System.getenv('REPOSITORY_ID')
+    // Default repository name for Premium.
+    repository_name = System.getenv('REPOSITORY_NAME') ?: 'premium'
+    // Optional repo-scoped token for GitHub Packages.
+    repository_token = System.getenv('REPOSITORY_TOKEN')
+
+    // === Project artifact naming ===
+    // Default jar base name for this module when not provided externally.
+    jarName = System.getenv('PROJECT_NAME') ?: "MCEngine${repository_name.capitalize()}"
+}
+
+repositories {
+    ext.configureGitHubRepo = { repoName, repoUrl ->
+        maven {
+            name = repoName
+            url = uri(repoUrl)
+            credentials {
+                username = user_git_name
+                password = user_github_token ?: repository_token ?: organization_token
+            }
+        }
+    }
+
+    configureGitHubRepo('MCEngine Core API', 'https://maven.pkg.github.com/MCEngine-API/core')
+    configureGitHubRepo('MCEngine Premium API', 'https://maven.pkg.github.com/MCEngine-API/premium')
+
+    mavenCentral()
+    mavenLocal()
+
+    maven {
+        url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots'
+        content {
+            includeGroup 'org.bukkit'
+            includeGroup 'org.spigotmc'
+        }
+    }
+
+    maven {
+        name = "papermc"
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url = 'https://oss.sonatype.org/content/repositories/central' }
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT'
+
+    compileOnly 'com.google.code.gson:gson:2.13.1'
+
+    compileOnly 'io.github.mcengine:core-api:2025.0.9-6'
+    compileOnly 'io.github.mcengine:premium-api:2025.0.9-6'
+}
+
+shadowJar {
+    version = version
+    archiveClassifier = null
+    archiveBaseName = jarName
+}
+
+tasks.named('jar').configure {
+    enabled = false
+}
+
+publishing {
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri("https://maven.pkg.github.com/${organization_name}/${repository_name}")
+            credentials {
+                username = user_git_name
+                password = user_github_token ?: repository_token ?: organization_token
+            }
+        }
+    }
+    publications {
+        mavenJava(MavenPublication) {
+            artifact tasks.named('shadowJar').get()
+            artifactId = "${repository_name}-common"
+
+            pom {
+                name.set(jarName)
+                description.set("The ${jarName} API is designed for use by ${repository_name.capitalize()} plugins and extensions.")
+                url.set("https://github.com/${organization_name}/${repository_name}")
+
+                scm {
+                    connection.set("scm:git:git://github.com/${organization_name}/${repository_name}.git")
+                    developerConnection.set("scm:git:ssh://github.com:${organization_name}/${repository_name}.git")
+                    url.set("https://github.com/${organization_name}/${repository_name}")
+                }
+
+                developers {
+                    developer {
+                        id.set('jetsadawijit')
+                        name.set('Jetsada Wijit')
+                        email.set('jetsadawijit@outlook.com')
+                        url.set('https://jetsadawijit.github.io')
+                    }
+                }
+            }
+        }
+    }
+}
+
+build.dependsOn(shadowJar)
