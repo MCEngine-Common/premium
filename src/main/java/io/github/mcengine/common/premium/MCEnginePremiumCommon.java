@@ -65,6 +65,15 @@ public class MCEnginePremiumCommon {
     }
 
     /**
+     * Lists available premium rank types by inspecting existing {@code premium_rank_*} tables.
+     *
+     * @return list of rank type suffixes (e.g., ["vip","vvip"]), never null
+     */
+    public java.util.List<String> listAvailableRankTypes() {
+        return db.listAvailableRankTypes();
+    }
+
+    /**
      * Creates the necessary tables or schema for storing premium rank data.
      *
      * @param rankType type of rank (e.g., vip, vvip)

@@ -75,6 +75,26 @@ public class MCEnginePremiumPostgreSQL implements IMCEnginePremiumDB {
         }
     }
 
+    @Override
+    public java.util.List<String> listAvailableRankTypes() {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        if (connection == null) return out;
+        final String prefix = "premium_rank_";
+        final String sql =
+            "SELECT table_name FROM information_schema.tables " +
+            "WHERE table_schema = current_schema() AND table_name LIKE 'premium_rank_%'";
+        try (var ps = connection.prepareStatement(sql);
+            var rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String name = rs.getString(1);
+                if (name != null && name.toLowerCase().startsWith(prefix)) {
+                    out.add(name.substring(prefix.length()));
+                }
+            }
+        } catch (Exception ignored) {}
+        return out;
+    }
+
     /**
      * Creates a premium rank table for the specified rank type if it does not exist.
      * Uses native UUID and INTEGER types for PostgreSQL.

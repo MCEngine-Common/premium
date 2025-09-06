@@ -1,5 +1,6 @@
 package io.github.mcengine.common.premium.tabcompleter;
 
+import io.github.mcengine.common.premium.MCEnginePremiumCommon;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -12,19 +13,19 @@ import java.util.List;
 /**
  * Tab completion for {@code /premium}.
  *
- * <p>Only suggests options the sender has permission to execute:</p>
- * <ul>
- *   <li>{@code mcengine.premium.rank.create} → {@code create}</li>
- *   <li>{@code mcengine.premium.rank.upgrade} → {@code upgrade}</li>
- *   <li>{@code mcengine.premium.rank.get} → {@code get}</li>
- *   <li>{@code mcengine.premium.rank.get.players} → player names for {@code get}</li>
- * </ul>
+ * <p>Only suggests options the sender has permission to execute. Also lists available
+ * rank types discovered from existing {@code premium_rank_*} tables via
+ * {@link MCEnginePremiumCommon#listAvailableRankTypes()}.</p>
  */
 public class MCEnginePremiumTabCompleter implements TabCompleter {
 
+    /** Permission node: allows creating premium rank tables (suggests {@code create}). */
     private static final String PERM_CREATE = "mcengine.premium.rank.create";
+    /** Permission node: allows upgrading own premium rank (suggests {@code upgrade}). */
     private static final String PERM_UPGRADE = "mcengine.premium.rank.upgrade";
+    /** Permission node: allows checking own premium rank (suggests {@code get}). */
     private static final String PERM_GET_SELF = "mcengine.premium.rank.get";
+    /** Permission node: allows checking other players' ranks (suggests player names for {@code get}). */
     private static final String PERM_GET_OTHERS = "mcengine.premium.rank.get.players";
 
     @Override
@@ -39,22 +40,36 @@ public class MCEnginePremiumTabCompleter implements TabCompleter {
             return filter(out, args[0]);
         }
 
-        // /premium get <...>
-        if (args.length >= 2 && "get".equalsIgnoreCase(args[0])) {
-            // If user can query others, suggest online player names as the 2nd argument.
-            if (args.length == 2 && sender.hasPermission(PERM_GET_OTHERS)) {
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    out.add(p.getName());
-                }
-                // If they only have self-get, and are a player, omit suggestions (rankType freeform).
-                return filter(out, args[1]);
+        // /premium upgrade <rankType>
+        if (args.length == 2 && "upgrade".equalsIgnoreCase(args[0])) {
+            if (sender.hasPermission(PERM_UPGRADE)) {
+                out.addAll(MCEnginePremiumCommon.getApi().listAvailableRankTypes());
             }
-            // For args >= 2 beyond player name / rank type, we don't suggest rank types to avoid leaking/guessing.
-            return out; // empty list → no suggestions
+            return filter(out, args[1]);
         }
 
-        // /premium create <rankType> or /premium upgrade <rankType>
-        // We intentionally do not suggest rank types here; left freeform.
+        // /premium get ...
+        if ("get".equalsIgnoreCase(args[0])) {
+            if (args.length == 2) {
+                // Suggest available rank types for self-get
+                if (sender.hasPermission(PERM_GET_SELF)) {
+                    out.addAll(MCEnginePremiumCommon.getApi().listAvailableRankTypes());
+                }
+                // Also suggest online player names if they can query others
+                if (sender.hasPermission(PERM_GET_OTHERS)) {
+                    for (Player p : Bukkit.getOnlinePlayers()) out.add(p.getName());
+                }
+                return filter(out, args[1]);
+            }
+            if (args.length == 3 && sender.hasPermission(PERM_GET_OTHERS)) {
+                // When querying others, suggest rank types as the 3rd arg
+                out.addAll(MCEnginePremiumCommon.getApi().listAvailableRankTypes());
+                return filter(out, args[2]);
+            }
+            return out;
+        }
+
+        // /premium create <rankType> – keep freeform (do not suggest)
         return out;
     }
 

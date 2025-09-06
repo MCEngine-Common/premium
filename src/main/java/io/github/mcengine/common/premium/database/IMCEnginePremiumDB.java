@@ -1,6 +1,7 @@
 package io.github.mcengine.common.premium.database;
 
 import java.sql.Connection;
+import java.util.List;
 
 /**
  * Interface for managing database operations related to MCEngine Premium system.
@@ -39,6 +40,13 @@ public interface IMCEnginePremiumDB {
      * @return {@code true} if table exists; {@code false} otherwise
      */
     boolean rankTableExists(String rankType);
+
+    /**
+     * Lists available premium rank types by inspecting existing {@code premium_rank_*} tables.
+     *
+     * @return list of rank type suffixes (e.g., ["vip","vvip"]), never null
+     */
+    List<String> listAvailableRankTypes();
 
     /**
      * Closes the current database connection.
