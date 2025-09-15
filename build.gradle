@@ -75,7 +75,7 @@ repositories {
 dependencies {
     compileOnly 'org.spigotmc:spigot-api:1.21.8-R0.1-SNAPSHOT'
 
-    compileOnly 'com.google.code.gson:gson:2.13.1'
+    compileOnly 'com.google.code.gson:gson:2.13.2'
 
     compileOnly 'io.github.mcengine:core-api:2025.0.9-15'
     compileOnly 'io.github.mcengine:premium-api:2025.0.9-15'
