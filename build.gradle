@@ -77,8 +77,8 @@ dependencies {
 
     compileOnly 'com.google.code.gson:gson:2.13.2'
 
-    compileOnly 'io.github.mcengine:core-api:2025.1.0-28'
-    compileOnly 'io.github.mcengine:premium-api:2025.1.0-28'
+    compileOnly 'io.github.mcengine:core-api:2025.1.0-29'
+    compileOnly 'io.github.mcengine:premium-api:2025.1.0-29'
 }
 
 shadowJar {
